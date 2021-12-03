@@ -40,11 +40,13 @@ DEFAULT_ARGS = {
     'email_on_retry': False
 }
 
-CLUSTER_ID = 'j-3BCJA64MODRWP'
+CLUSTER_ID = 'j-2SAXTXLXO0IN3'
 
 def retrieve_s3_file(**kwargs):
-    s3_location = kwargs['dag_run'].conf['s3_location'] 
+    s3_location = kwargs['dag_run'].conf['s3_location']
+    folder = kwargs['dag_run'].conf['folder']
     kwargs['ti'].xcom_push( key = 's3location', value = s3_location)
+    kwargs['ti'].xcom_push( key = 'folder', value = folder)
 
 SPARK_TEST_STEPS = [
     {
@@ -62,15 +64,14 @@ SPARK_TEST_STEPS = [
                 '--executor-memory','3g',
                 '--executor-cores','2',
                 's3://qixuanma/spark-engine_2.12-0.0.1.jar',
-                '-p','wcd-demo',
-                '-i','Csv',
+                '-p','wcd-midterm',
+                '-i','Json',
                 '-o','parquet',
                 #'-s','s3a://demo-wcd/banking.csv',
                 '-s', "{{ task_instance.xcom_pull('parse_request', key='s3location') }}",
-                '-d','s3://qixuanmadata/data',
+                '-d','s3://qixuanmadata/data/'+"{{ task_instance.xcom_pull('parse_request', key='folder') }}",
                 '-c','job',
-                '-m','append',
-                '--input-options','header=true'
+                '-m','overwrite'
             ]
         }
     }
