@@ -79,7 +79,7 @@ JOB_FLOW_OVERRIDES = {
     },
     'JobFlowRole': 'EMR_EC2_DefaultRole',
     'ServiceRole': 'EMR_DefaultRole',
-    'AutoScalingRole'='EMR_AutoScaling_DefaultRole'
+    'AutoScalingRole': 'EMR_AutoScaling_DefaultRole'
 }
 
 SPARK_TEST_STEPS = [
