@@ -142,7 +142,7 @@ step_adder = EmrAddStepsOperator(
 
 step_checker = EmrStepSensor(
     task_id='watch_step',
-    job_flow_id=cluster_creator.output,
+    job_flow_id="{{ task_instance.xcom_pull('create_job_flow', key='return_value') }}",
     step_id="{{ task_instance.xcom_pull('add_steps', key='return_value')[0] }}",
     aws_conn_id='aws_default',
     dag=dag
