@@ -134,7 +134,7 @@ cluster_creator = EmrCreateJobFlowOperator(
 
 step_adder = EmrAddStepsOperator(
     task_id='add_steps',
-    job_flow_id=cluster_creator.output,
+    job_flow_id="{{ task_instance.xcom_pull('create_job_flow', key='return_value') }}",
     aws_conn_id='aws_default',
     steps=SPARK_TEST_STEPS,
     dag=dag
@@ -150,7 +150,7 @@ step_checker = EmrStepSensor(
 
 cluster_remover = EmrTerminateJobFlowOperator(
         task_id='remove_cluster', 
-        job_flow_id=cluster_creator.output,
+        job_flow_id="{{ task_instance.xcom_pull('create_job_flow', key='return_value') }}",
         dag=dag
 )
 
