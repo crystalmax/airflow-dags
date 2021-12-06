@@ -130,6 +130,7 @@ cluster_creator = EmrCreateJobFlowOperator(
         task_id='create_job_flow',
         job_flow_overrides=JOB_FLOW_OVERRIDES,
         aws_conn_id='aws_default',
+        emr_conn_id='emr_default',
         dag=dag
 )
 
