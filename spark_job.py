@@ -40,13 +40,47 @@ DEFAULT_ARGS = {
     'email_on_retry': False
 }
 
-CLUSTER_ID = 'j-278EAV0LCH0W0'
+#CLUSTER_ID = 'j-278EAV0LCH0W0'
 
 def retrieve_s3_file(**kwargs):
     s3_location = kwargs['dag_run'].conf['s3_location']
     folder = kwargs['dag_run'].conf['folder']
     kwargs['ti'].xcom_push( key = 's3location', value = s3_location)
     kwargs['ti'].xcom_push( key = 'folder', value = folder)
+
+JOB_FLOW_OVERRIDES = {
+    'Name': 'de_bootcamp',
+    'ReleaseLabel': 'emr-6.4.0',
+    'Applications': [{'Name': 'Spark'},{'Name': 'Hadoop'}, {'Name': 'Hive'}],
+    'Instances': {
+        'InstanceGroups': [
+            {
+                'Name': 'Primary node',
+                'Market': 'ON_DEMAND',
+                'InstanceRole': 'MASTER',
+                'InstanceType': 'm5.xlarge',
+                'InstanceCount': 1,
+            },
+            {
+                'Name': 'Worker node',
+                'Market': 'ON_DEMAND',
+                'InstanceRole': 'Core',
+                'InstanceType': 'm5.xlarge',
+                'InstanceCount': 2,
+            }
+        ],
+        'Ec2KeyName': 'wcdkey',
+        'Placement': {
+            'AvailabilityZone': 'us-east-1'
+        },
+        'Ec2SubnetId': 'subnet-2c545570',
+        'KeepJobFlowAliveWhenNoSteps': True,
+        'TerminationProtected': False,
+    },
+    'JobFlowRole': 'EMR_EC2_DefaultRole',
+    'ServiceRole': 'EMR_DefaultRole',
+    'AutoScalingRole'='EMR_AutoScaling_DefaultRole'
+}
 
 SPARK_TEST_STEPS = [
     {
@@ -70,7 +104,7 @@ SPARK_TEST_STEPS = [
                 #'-s','s3a://demo-wcd/banking.csv',
                 '-f', "{{ task_instance.xcom_pull('parse_request', key='folder') }}",
                 '-s', "{{ task_instance.xcom_pull('parse_request', key='s3location') }}",
-                '-d','s3://qixuanmadata/data/'+"{{ task_instance.xcom_pull('parse_request', key='folder') }}",
+                '-d','s3://qixuanmadata/data/',
                 '-m','overwrite'
             ]
         }
@@ -89,12 +123,18 @@ dag = DAG(
 parse_request = PythonOperator(task_id='parse_request',
                              provide_context=True,
                              python_callable=retrieve_s3_file,
-                             dag=dag)
+                             dag=dag
+)
 
+cluster_creator = EmrCreateJobFlowOperator(
+        task_id='create_job_flow',
+        job_flow_overrides=JOB_FLOW_OVERRIDES,
+        dag=dag
+)
 
 step_adder = EmrAddStepsOperator(
     task_id='add_steps',
-    job_flow_id=CLUSTER_ID,
+    job_flow_id=cluster_creator.output,
     aws_conn_id='aws_default',
     steps=SPARK_TEST_STEPS,
     dag=dag
@@ -102,11 +142,17 @@ step_adder = EmrAddStepsOperator(
 
 step_checker = EmrStepSensor(
     task_id='watch_step',
-    job_flow_id=CLUSTER_ID,
+    job_flow_id=cluster_creator.output,
     step_id="{{ task_instance.xcom_pull('add_steps', key='return_value')[0] }}",
     aws_conn_id='aws_default',
     dag=dag
 )
 
-step_adder.set_upstream(parse_request)
-step_checker.set_upstream(step_adder)
+cluster_remover = EmrTerminateJobFlowOperator(
+        task_id='remove_cluster', 
+        job_flow_id=cluster_creator.output,
+        dag=dag
+)
+
+parse_request>>cluster_creator>>step_adder>>step_checker>>cluster_remover
+
