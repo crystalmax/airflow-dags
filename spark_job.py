@@ -64,7 +64,7 @@ JOB_FLOW_OVERRIDES = {
             {
                 'Name': 'Worker node',
                 'Market': 'ON_DEMAND',
-                'InstanceRole': 'Core',
+                'InstanceRole': 'CORE',
                 'InstanceType': 'm5.xlarge',
                 'InstanceCount': 2,
             }
