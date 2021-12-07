@@ -70,9 +70,6 @@ JOB_FLOW_OVERRIDES = {
             }
         ],
         'Ec2KeyName': 'wcdkey',
-        'Placement': {
-            'AvailabilityZone': 'us-east-1'
-        },
         'Ec2SubnetId': 'subnet-2c545570',
         'KeepJobFlowAliveWhenNoSteps': True,
         'TerminationProtected': False,
