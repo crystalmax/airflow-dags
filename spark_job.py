@@ -49,7 +49,7 @@ def retrieve_s3_file(**kwargs):
     kwargs['ti'].xcom_push( key = 'folder', value = folder)
 
 JOB_FLOW_OVERRIDES = {
-    'Name': 'de_bootcamp',
+    'Name': 'cluster_for_' + "{{ task_instance.xcom_pull('parse_request', key='folder') }}",
     'ReleaseLabel': 'emr-6.4.0',
     'Applications': [{'Name': 'Spark'},{'Name': 'Hadoop'}, {'Name': 'Hive'}],
     'Instances': {
@@ -98,7 +98,6 @@ SPARK_TEST_STEPS = [
                 '-p','wcd-midterm',
                 '-i','Json',
                 '-o','parquet',
-                #'-s','s3a://demo-wcd/banking.csv',
                 '-f', "{{ task_instance.xcom_pull('parse_request', key='folder') }}",
                 '-s', "{{ task_instance.xcom_pull('parse_request', key='s3location') }}",
                 '-d','s3://qixuanmadata/data/',
